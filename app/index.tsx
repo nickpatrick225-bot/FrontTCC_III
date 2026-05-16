@@ -41,25 +41,36 @@ export default function LoginScreen() {
     try {
       const loginResponse = await apiService.login(email.trim(), password);
       await SecureStore.setItemAsync('authToken', loginResponse.token);
+      // Salva senha para permitir re-login automático ao ativar premium
+      await SecureStore.setItemAsync('userPassword', password);
 
       const userData = await apiService.getUser(email.trim());
 
-      // Salva todos os dados do usuário
-      await SecureStore.setItemAsync('userData', JSON.stringify({
-        ...userData,
+      // Salva todos os dados do usuário (normaliza as chaves para camelCase)
+      const normalizedUserData = {
+        id: userData.Id ?? userData.id,
+        nome: userData.Nome ?? userData.nome,
+        email: userData.Email ?? userData.email,
+        numeroCelular: userData.NumeroCelular ?? userData.numeroCelular ?? userData.numerocelular ?? '',
+        dataNascimento: userData.DataNascimento ?? userData.dataNascimento ?? userData.datanascimento ?? null,
+        preferencias: userData.Preferencias ?? userData.preferencias ?? {},
+        orcamento: userData.Orcamento ?? userData.orcamento ?? 0,
+        planoAtivo: userData.PlanoAtivo ?? userData.planoAtivo ?? userData.planoativo ?? 'free',
         loggedIn: true,
         loginTime: new Date().toISOString(),
-      }));
+      };
+
+      await SecureStore.setItemAsync('userData', JSON.stringify(normalizedUserData));
 
       // AQUI SALVA AS PREFERÊNCIAS DO USUÁRIO (ESSA É A PARTE QUE FALTAVA!)
-      if (userData.preferencias) {
-        await SecureStore.setItemAsync('USER_PREFERENCES', JSON.stringify(userData.preferencias));
+      if (normalizedUserData.preferencias) {
+        await SecureStore.setItemAsync('USER_PREFERENCES', JSON.stringify(normalizedUserData.preferencias));
       }
 
       // Sucesso!
       Alert.alert(
         'Login realizado!',
-        `Bem-vindo de volta, ${userData.nome.split(' ')[0]}!`,
+        `Bem-vindo de volta, ${normalizedUserData.nome.split(' ')[0]}!`,
         [{
           text: 'Vamos lá!',
           onPress: () => router.replace('/(tabs)')

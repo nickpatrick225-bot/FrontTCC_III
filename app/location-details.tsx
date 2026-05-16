@@ -23,6 +23,42 @@ import { apiService } from '../services/api';
 
 const { width } = Dimensions.get('window');
 
+// Mock de avaliações
+const mockReviews = [
+  {
+    id: '1',
+    userName: 'Maria Silva',
+    avatar: 'https://i.pravatar.cc/150?img=1',
+    rating: 5,
+    date: '2 dias atrás',
+    comment: 'Lugar incrível! A vista é maravilhosa e o atendimento foi excelente. Super recomendo!',
+  },
+  {
+    id: '2',
+    userName: 'João Santos',
+    avatar: 'https://i.pravatar.cc/150?img=12',
+    rating: 4,
+    date: '1 semana atrás',
+    comment: 'Muito bom, mas estava um pouco cheio quando visitei. Vale a pena ir em horários alternativos.',
+  },
+  {
+    id: '3',
+    userName: 'Ana Costa',
+    avatar: 'https://i.pravatar.cc/150?img=5',
+    rating: 5,
+    date: '2 semanas atrás',
+    comment: 'Perfeito para passar o dia com a família. As crianças adoraram!',
+  },
+];
+
+const renderStars = (rating: number) => {
+  return Array.from({ length: 5 }, (_, i) => (
+    <Text key={i} style={styles.star}>
+      {i < rating ? '⭐' : '☆'}
+    </Text>
+  ));
+};
+
 export default function LocationDetailsScreen() {
   const params = useLocalSearchParams();
   const [isSaved, setIsSaved] = useState(false);
@@ -230,7 +266,19 @@ const toggleFavorite = async () => {
 
         <View style={styles.commentsCard}>
           <Text style={styles.sectionTitle}>Avaliações</Text>
-          <Text style={styles.emptyReviews}>Avaliações disponíveis em breve</Text>
+          {mockReviews.map((review) => (
+            <View key={review.id} style={styles.reviewItem}>
+              <View style={styles.reviewHeader}>
+                <Image source={{ uri: review.avatar }} style={styles.reviewAvatar} />
+                <View style={styles.reviewHeaderText}>
+                  <Text style={styles.reviewUserName}>{review.userName}</Text>
+                  <View style={styles.reviewStars}>{renderStars(review.rating)}</View>
+                </View>
+                <Text style={styles.reviewDate}>{review.date}</Text>
+              </View>
+              <Text style={styles.reviewComment}>{review.comment}</Text>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </View>
@@ -265,6 +313,15 @@ const styles = StyleSheet.create({
   directionsText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   commentsCard: { backgroundColor: '#fff', marginHorizontal: 16, marginBottom: 20, padding: 20, borderRadius: 16, elevation: 3 },
   emptyReviews: { fontSize: 15, color: '#999', textAlign: 'center', paddingVertical: 20 },
+  reviewItem: { marginBottom: 20, paddingBottom: 20, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  reviewHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
+  reviewAvatar: { width: 44, height: 44, borderRadius: 22, marginRight: 12 },
+  reviewHeaderText: { flex: 1 },
+  reviewUserName: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 4 },
+  reviewStars: { flexDirection: 'row', gap: 2 },
+  star: { fontSize: 14 },
+  reviewDate: { fontSize: 12, color: '#999' },
+  reviewComment: { fontSize: 14, color: '#555', lineHeight: 20 },
   horariosCard: { marginHorizontal: 16, marginBottom: 8 },
   horariosButton: {
     flexDirection: 'row',

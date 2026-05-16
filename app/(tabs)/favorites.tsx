@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { MapPin, Heart, Trash2, Calendar, CheckCircle, Circle } from 'lucide-react-native';
+import { MapPin, Heart, Trash2, Calendar } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
@@ -23,8 +23,6 @@ export default function FavoritesScreen() {
   const [favorites, setFavorites] = useState<FavoritePlace[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectionMode, setSelectionMode] = useState(false);
   const router = useRouter();
 
   const loadFavorites = async () => {
@@ -86,22 +84,6 @@ export default function FavoritesScreen() {
     });
   };
 
-  const toggleSelection = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleSelectionMode = () => {
-    if (selectionMode) {
-      setSelectedIds(new Set());
-    }
-    setSelectionMode(!selectionMode);
-  };
-
   const parseIcsDate = (str: string): Date => {
     // Format: 20250408T090000Z
     const y = parseInt(str.substring(0, 4));
@@ -114,9 +96,8 @@ export default function FavoritesScreen() {
   };
 
   const handleGenerateItinerary = async () => {
-    const selected = favorites.filter(f => selectedIds.has(f.id));
-    if (selected.length === 0) {
-      Alert.alert('Selecione lugares', 'Selecione ao menos um lugar para gerar o roteiro.');
+    if (favorites.length === 0) {
+      Alert.alert('Sem favoritos', 'Adicione lugares aos favoritos para gerar um roteiro.');
       return;
     }
 
@@ -130,7 +111,7 @@ export default function FavoritesScreen() {
       }
 
       const payload = {
-        places: selected.map(f => ({
+        places: favorites.map(f => ({
           placeId: f.id,
           name: f.name,
           address: f.location,
@@ -192,8 +173,6 @@ export default function FavoritesScreen() {
         [{ text: 'Ótimo!' }]
       );
 
-      setSelectionMode(false);
-      setSelectedIds(new Set());
     } catch (error: any) {
       if (!error.message?.includes('premium')) {
         Alert.alert('Erro', 'Não foi possível gerar o roteiro.');
@@ -217,42 +196,23 @@ export default function FavoritesScreen() {
         <View style={styles.headerContent}>
           <Heart size={28} color="#fff" fill="#fff" />
           <Text style={styles.headerTitle}>Meus Favoritos</Text>
+          {favorites.length > 0 && (
+            <TouchableOpacity
+              style={[styles.calendarButton, exporting && styles.calendarButtonDisabled]}
+              onPress={handleGenerateItinerary}
+              disabled={exporting}
+            >
+              {exporting ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Calendar size={22} color="#fff" />
+              )}
+            </TouchableOpacity>
+          )}
         </View>
       </LinearGradient>
 
       <ScrollView style={styles.content}>
-        {favorites.length > 0 && (
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.selectButton, selectionMode && styles.selectButtonActive]}
-              onPress={toggleSelectionMode}
-            >
-              <Text style={[styles.selectButtonText, selectionMode && styles.selectButtonTextActive]}>
-                {selectionMode ? 'Cancelar' : 'Selecionar'}
-              </Text>
-            </TouchableOpacity>
-
-            {selectionMode && selectedIds.size > 0 && (
-              <TouchableOpacity
-                style={[styles.exportButton, exporting && styles.exportButtonDisabled]}
-                onPress={handleGenerateItinerary}
-                disabled={exporting}
-              >
-                {exporting ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <>
-                    <Calendar size={20} color="#fff" />
-                    <Text style={styles.exportButtonText}>
-                      Gerar Roteiro ({selectedIds.size})
-                    </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-
         {favorites.length === 0 ? (
           <View style={styles.emptyState}>
             <Heart size={90} color="#ddd" />
@@ -266,7 +226,7 @@ export default function FavoritesScreen() {
             <TouchableOpacity
               key={item.id}
               style={styles.favoriteCard}
-              onPress={() => selectionMode ? toggleSelection(item.id) : handleLocationPress(item)}
+              onPress={() => handleLocationPress(item)}
             >
               <Image
                 source={{ uri: item.image }}
@@ -276,25 +236,18 @@ export default function FavoritesScreen() {
 
               <View style={styles.cardContent}>
                 <View style={styles.cardHeader}>
-                  {selectionMode && (
-                    selectedIds.has(item.id)
-                      ? <CheckCircle size={24} color="#40E0D0" />
-                      : <Circle size={24} color="#CCC" />
-                  )}
                   <Text style={styles.cardTitle} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  {!selectionMode && (
-                    <TouchableOpacity
-                      style={styles.removeButton}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        removeFavorite(item.id);
-                      }}
-                    >
-                      <Trash2 size={22} color="#fff" />
-                    </TouchableOpacity>
-                  )}
+                  <TouchableOpacity
+                    style={styles.removeButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      removeFavorite(item.id);
+                    }}
+                  >
+                    <Trash2 size={22} color="#fff" />
+                  </TouchableOpacity>
                 </View>
 
                 <View style={styles.locationContainer}>

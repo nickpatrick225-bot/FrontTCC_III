@@ -85,11 +85,25 @@ export const apiService = {
   getUser: (email: string) =>
     request<UserData>(`/api/Usuarios/${encodeURIComponent(email)}`),
 
-  updateUser: (email: string, payload: Record<string, unknown>) =>
-    request<void>(`/api/Usuarios/${encodeURIComponent(email)}`, {
+  updateUser: async (email: string, payload: Record<string, unknown>) => {
+    const response = await fetch(`${API_BASE_URL}/api/Usuarios/${encodeURIComponent(email)}`, {
       method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await getToken()}`,
+      },
       body: JSON.stringify(payload),
-    }),
+    });
+
+    if (response.status === 204) {
+      return; // NoContent - resposta vazia
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Erro ${response.status}: ${errorText}`);
+    }
+  },
 
   deleteUser: (email: string) =>
     request<void>(`/api/Usuarios/${encodeURIComponent(email)}`, {
@@ -128,11 +142,25 @@ export const apiService = {
       body: JSON.stringify(payload),
     }),
 
-  updatePlan: (email: string, plano: string) =>
-    request<void>(`/api/Usuarios/${encodeURIComponent(email)}/plano`, {
+  updatePlan: async (email: string, plano: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/Usuarios/${encodeURIComponent(email)}/plano`, {
       method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await getToken()}`,
+      },
       body: JSON.stringify({ plano }),
-    }),
+    });
+
+    if (response.status === 204) {
+      return; // NoContent - resposta vazia
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Erro ${response.status}: ${errorText}`);
+    }
+  },
 
   resetPassword: (email: string, novaSenha: string) =>
     request<void>('/api/Usuarios/reset-password', {

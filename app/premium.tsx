@@ -50,11 +50,22 @@ export default function PremiumScreen() {
       const userData = JSON.parse(userDataRaw);
       await apiService.updatePlan(userData.email, 'premium');
 
-      // Atualiza dados locais
-      userData.planoAtivo = 'premium';
-      await SecureStore.setItemAsync('userData', JSON.stringify(userData));
+      // Busca dados atualizados do usuário para garantir que o plano está correto
+      const freshUser = await apiService.getUser(userData.email);
+      const updatedUserData = { ...userData, ...freshUser, planoAtivo: 'premium' };
+      await SecureStore.setItemAsync('userData', JSON.stringify(updatedUserData));
 
-      // Re-login para atualizar o token JWT com o novo plano
+      // Re-faz login para obter novo token JWT com claim de premium
+      try {
+        const senhaRaw = await SecureStore.getItemAsync('userPassword');
+        if (senhaRaw) {
+          const loginResp = await apiService.login(userData.email, senhaRaw);
+          await SecureStore.setItemAsync('authToken', loginResp.token);
+        }
+      } catch {
+        // Se não tiver senha salva, o token antigo ainda funciona para a sessão atual
+      }
+
       Alert.alert(
         'Parabéns! 🎉',
         'Você agora é um usuário Premium! Aproveite os horários ideais e a exportação de calendário.',

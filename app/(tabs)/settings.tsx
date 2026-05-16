@@ -7,9 +7,10 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, ArrowRight, User, Heart, Star } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, User, Heart, Star, Trash2 } from 'lucide-react-native';
 import Slider from '@react-native-community/slider';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -27,6 +28,251 @@ const preferenceCategories = [
 const toSlider = (value: number) => Math.round((value / 5) * 100);
 const fromSlider = (value: number) => Math.round((value / 100) * 5);
 
+// Componente ProfileView
+function ProfileView() {
+  const router = useRouter();
+  const [userData, setUserData] = useState<any>(null);
+  const [nome, setNome] = useState('');
+  const [celular, setCelular] = useState('');
+  const [dataNascimento, setDataNascimento] = useState('');
+  const [orcamento, setOrcamento] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserData();
+    }, [])
+  );
+
+  const loadUserData = async () => {
+    try {
+      const userDataRaw = await SecureStore.getItemAsync('userData');
+      if (userDataRaw) {
+        const data = JSON.parse(userDataRaw);
+        setUserData(data);
+        setNome(data.nome || '');
+        setCelular(data.numeroCelular || data.numerocelular || '');
+        setDataNascimento(data.dataNascimento || data.datanascimento || '');
+        setOrcamento(String(data.orcamento || 0));
+      }
+    } catch (error) {
+      console.log('Erro ao carregar dados do usuário:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (saving) return;
+    setSaving(true);
+
+    try {
+      if (!userData?.email) {
+        Alert.alert('Erro', 'Email do usuário não encontrado.');
+        return;
+      }
+
+      // Converte data de nascimento para formato ISO se existir
+      let dataNascimentoISO: string | null = null;
+      if (dataNascimento) {
+        // Tenta converter DD/MM/AAAA para ISO
+        const parts = dataNascimento.split('/');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          dataNascimentoISO = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00Z`;
+        }
+      }
+
+      const payload = {
+        nome,
+        email: userData.email,
+        numeroCelular: celular,
+        dataNascimento: dataNascimentoISO,
+        orcamento: parseFloat(orcamento) || 0,
+      };
+
+      await apiService.updateUser(userData.email, payload);
+
+      // Atualiza cache local
+      const updatedUserData = { ...userData, ...payload };
+      await SecureStore.setItemAsync('userData', JSON.stringify(updatedUserData));
+      setUserData(updatedUserData);
+
+      Alert.alert('Sucesso!', 'Perfil atualizado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar perfil:', error);
+      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Excluir Conta',
+      'Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (!userData?.email) return;
+
+              await apiService.deleteUser(userData.email);
+
+              // Limpa todos os dados locais
+              await SecureStore.deleteItemAsync('userToken');
+              await SecureStore.deleteItemAsync('userData');
+              await SecureStore.deleteItemAsync('USER_PREFERENCES');
+              await SecureStore.deleteItemAsync('cachedPlaces');
+              await SecureStore.deleteItemAsync('cachedPlacesTime');
+
+              Alert.alert('Conta Excluída', 'Sua conta foi excluída com sucesso.', [
+                { text: 'OK', onPress: () => router.replace('/') }
+              ]);
+            } catch (error) {
+              console.error('Erro ao excluir conta:', error);
+              Alert.alert('Erro', 'Não foi possível excluir a conta. Tente novamente.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={profileStyles.loadingContainer}>
+        <ActivityIndicator size="large" color="#40E0D0" />
+      </View>
+    );
+  }
+
+  return (
+    <View style={profileStyles.container}>
+      <View style={profileStyles.field}>
+        <Text style={profileStyles.label}>Nome</Text>
+        <TextInput
+          style={profileStyles.input}
+          value={nome}
+          onChangeText={setNome}
+          placeholder="Seu nome"
+          placeholderTextColor="#999"
+        />
+      </View>
+
+      <View style={profileStyles.field}>
+        <Text style={profileStyles.label}>Email</Text>
+        <TextInput
+          style={[profileStyles.input, profileStyles.inputDisabled]}
+          value={userData?.email || ''}
+          editable={false}
+          placeholderTextColor="#999"
+        />
+        <Text style={profileStyles.hint}>O email não pode ser alterado</Text>
+      </View>
+
+      <View style={profileStyles.field}>
+        <Text style={profileStyles.label}>Celular</Text>
+        <TextInput
+          style={profileStyles.input}
+          value={celular}
+          onChangeText={setCelular}
+          placeholder="(00) 00000-0000"
+          keyboardType="phone-pad"
+          placeholderTextColor="#999"
+        />
+      </View>
+
+      <View style={profileStyles.field}>
+        <Text style={profileStyles.label}>Data de Nascimento</Text>
+        <TextInput
+          style={profileStyles.input}
+          value={dataNascimento}
+          onChangeText={setDataNascimento}
+          placeholder="DD/MM/AAAA"
+          placeholderTextColor="#999"
+        />
+      </View>
+
+      <View style={profileStyles.field}>
+        <Text style={profileStyles.label}>Orçamento (R$)</Text>
+        <TextInput
+          style={profileStyles.input}
+          value={orcamento}
+          onChangeText={setOrcamento}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+          placeholderTextColor="#999"
+        />
+      </View>
+
+      <TouchableOpacity
+        style={[profileStyles.saveButton, saving && profileStyles.saveButtonDisabled]}
+        onPress={handleSave}
+        disabled={saving}
+      >
+        {saving ? (
+          <ActivityIndicator color="#fff" size="small" />
+        ) : (
+          <Text style={profileStyles.saveButtonText}>Salvar Alterações</Text>
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={profileStyles.deleteButton}
+        onPress={handleDeleteAccount}
+      >
+        <Trash2 size={20} color="#FF3B30" />
+        <Text style={profileStyles.deleteButtonText}>Excluir Conta</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+const profileStyles = StyleSheet.create({
+  container: { paddingBottom: 40 },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 60 },
+  field: { marginBottom: 20 },
+  label: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 8 },
+  input: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: '#333',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  inputDisabled: { backgroundColor: '#F5F5F5', color: '#999' },
+  hint: { fontSize: 12, color: '#999', marginTop: 4 },
+  saveButton: {
+    backgroundColor: '#40E0D0',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 20,
+    elevation: 6,
+  },
+  saveButtonDisabled: { backgroundColor: '#999' },
+  saveButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    borderWidth: 2,
+    borderColor: '#FF3B30',
+  },
+  deleteButtonText: { color: '#FF3B30', fontSize: 16, fontWeight: '600' },
+});
+
 export default function SettingsScreen() {
   const router = useRouter();
   const [currentView, setCurrentView] = useState<'preferences' | 'profile'>('preferences');
@@ -37,16 +283,48 @@ export default function SettingsScreen() {
 
   const loadPreferences = useCallback(async () => {
     try {
-      const saved = await SecureStore.getItemAsync('USER_PREFERENCES');
-      if (!saved) return;
+      // Primeiro tenta buscar do banco via API para garantir dados atualizados
+      const userDataRaw = await SecureStore.getItemAsync('userData');
+      if (!userDataRaw) return;
 
-      const backendPrefs = JSON.parse(saved);
+      const userData = JSON.parse(userDataRaw);
+
+      // Tenta buscar dados frescos da API
+      let backendPrefs: Record<string, number> | null = null;
+      try {
+        const freshUser = await apiService.getUser(userData.email);
+        if (freshUser) {
+          // Normaliza campos (Newtonsoft retorna PascalCase)
+          const prefs = (freshUser as any).Preferencias ?? (freshUser as any).preferencias;
+          const plano = (freshUser as any).PlanoAtivo ?? (freshUser as any).planoAtivo ?? (freshUser as any).planoativo ?? 'free';
+
+          if (prefs) {
+            backendPrefs = prefs;
+            await SecureStore.setItemAsync('USER_PREFERENCES', JSON.stringify(prefs));
+          }
+
+          // Atualiza o plano no userData local
+          const updatedUserData = { ...userData, planoAtivo: plano };
+          await SecureStore.setItemAsync('userData', JSON.stringify(updatedUserData));
+          setPlanoAtivo(plano);
+        }
+      } catch {
+        // Se falhar, usa o cache local
+        const saved = await SecureStore.getItemAsync('USER_PREFERENCES');
+        if (saved) {
+          backendPrefs = JSON.parse(saved);
+        } else if (userData.preferencias) {
+          backendPrefs = userData.preferencias;
+        }
+      }
+
+      if (!backendPrefs) return;
 
       const newReal: Record<string, number> = {};
       const newSlider: Record<string, number> = {};
 
       preferenceCategories.forEach(cat => {
-        const value = backendPrefs[cat.backendKey] ?? 3;
+        const value = backendPrefs![cat.backendKey] ?? 3;
         newReal[cat.key] = value;
         newSlider[cat.key] = toSlider(value);
       });
@@ -63,7 +341,9 @@ export default function SettingsScreen() {
       const userDataRaw = await SecureStore.getItemAsync('userData');
       if (userDataRaw) {
         const userData = JSON.parse(userDataRaw);
-        setPlanoAtivo(userData.planoAtivo || 'free');
+        // Suporta tanto camelCase quanto lowercase (variações do backend)
+        const plano = userData.planoAtivo || userData.planoativo || userData.PlanoAtivo || 'free';
+        setPlanoAtivo(plano);
       }
     } catch (error) {
       console.log('Erro ao carregar plano:', error);
@@ -73,8 +353,7 @@ export default function SettingsScreen() {
   useFocusEffect(
     useCallback(() => {
       loadPreferences();
-      loadUserPlan();
-    }, [loadPreferences, loadUserPlan])
+    }, [loadPreferences])
   );
 
   const savePreferences = async () => {
@@ -95,11 +374,17 @@ export default function SettingsScreen() {
         updatedPreferences[cat.backendKey] = realPreferences[cat.key] ?? 3;
       });
 
+      // Converte data de nascimento para null se estiver vazia
+      const dataNascimentoValue = userData.datanascimento || userData.dataNascimento;
+      const dataNascimentoISO = dataNascimentoValue ? 
+        (typeof dataNascimentoValue === 'string' ? dataNascimentoValue : null) : 
+        null;
+
       const payload: Record<string, unknown> = {
         nome: userData.nome,
         email: userData.email,
         numeroCelular: userData.numerocelular || userData.numeroCelular || '',
-        dataNascimento: userData.datanascimento || userData.dataNascimento || '',
+        dataNascimento: dataNascimentoISO,
         preferencias: updatedPreferences,
         orcamento: userData.orcamento || 0,
       };
