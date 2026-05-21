@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, router } from 'expo-router';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { ArrowLeft, MapPin, Thermometer, Heart, Navigation, Clock, Calendar } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import * as SecureStore from 'expo-secure-store';
@@ -175,17 +175,19 @@ export default function LocationDetailsScreen() {
       return;
     }
 
-    const url = Platform.select({
-      ios: `http://maps.apple.com/?daddr=${latitude},${longitude}&dirflg=d`,
-      android: `google.navigation:q=${latitude},${longitude}&mode=d`,
-    });
+    let url: string;
+    if (Platform.OS === 'ios') {
+      // Apple Maps no iOS
+      url = `http://maps.apple.com/?daddr=${latitude},${longitude}&dirflg=d`;
+    } else {
+      // Google Maps no Android (intent direto)
+      url = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
+    }
 
-    Linking.canOpenURL(url!)
-      .then((supported) => {
-        if (supported) Linking.openURL(url!);
-        else Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
-      })
-      .catch(() => CustomAlertService.error('Erro', 'Não foi possível abrir o app de mapas'));
+    Linking.openURL(url).catch(() => {
+      // Fallback: abre no navegador
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
+    });
   };
 
   const fetchHorariosIdeais = async () => {
@@ -217,14 +219,22 @@ export default function LocationDetailsScreen() {
         return;
       }
 
-      // Pega o calendário padrão do usuário
+      // Pega o calendário padrão do usuário (compatível Android e iOS)
       const calendars = await ExpoCalendar.getCalendarsAsync(ExpoCalendar.EntityTypes.EVENT);
-      const defaultCalendar = calendars.find(c => c.isPrimary && c.allowsModifications)
-        || calendars.find(c => c.allowsModifications)
-        || calendars[0];
+
+      let defaultCalendar;
+      if (Platform.OS === 'ios') {
+        defaultCalendar = calendars.find(c => c.isPrimary && c.allowsModifications)
+          || calendars.find(c => c.allowsModifications);
+      } else {
+        // Android: prefere calendário do Google, senão qualquer um que permita modificação
+        defaultCalendar = calendars.find(c => c.allowsModifications && c.source?.name?.includes('Google'))
+          || calendars.find(c => c.allowsModifications && c.accessLevel === 'owner')
+          || calendars.find(c => c.allowsModifications);
+      }
 
       if (!defaultCalendar) {
-        CustomAlertService.error('Erro', 'Nenhum calendário disponível no dispositivo.');
+        CustomAlertService.error('Erro', 'Nenhum calendário disponível no dispositivo. Verifique se você tem uma conta Google configurada.');
         return;
       }
 
@@ -354,6 +364,7 @@ export default function LocationDetailsScreen() {
           <Text style={styles.sectionTitle}>Localização</Text>
           <MapView
             style={styles.map}
+            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
             initialRegion={{
               latitude,
               longitude,

@@ -10,7 +10,11 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "n"
+      "bundleIdentifier": "n",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Precisamos da sua localização para recomendar lugares próximos.",
+        "NSCalendarsUsageDescription": "Precisamos acessar seu calendário para salvar horários de visita."
+      }
     },
     "web": {
       "bundler": "metro",
@@ -37,7 +41,18 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#40E0D0"
-      }
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "AIzaSyAprcgWbEpsQNbzMmi17yqe_2213eRzxDQ"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_CALENDAR",
+        "WRITE_CALENDAR"
+      ]
     },
     "owner": "nikkpatrikk"
   }
