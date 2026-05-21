@@ -214,8 +214,17 @@ function ProfileView() {
         <TextInput
           style={profileStyles.input}
           value={dataNascimento}
-          onChangeText={setDataNascimento}
+          onChangeText={(t) => {
+            let cleaned = t.replace(/\D/g, '');
+            if (cleaned.length > 8) cleaned = cleaned.slice(0, 8);
+            let masked = '';
+            if (cleaned.length > 0) masked = cleaned.slice(0, 2);
+            if (cleaned.length > 2) masked += '/' + cleaned.slice(2, 4);
+            if (cleaned.length > 4) masked += '/' + cleaned.slice(4, 8);
+            setDataNascimento(masked);
+          }}
           placeholder="DD/MM/AAAA"
+          keyboardType="numeric"
           placeholderTextColor="#999"
         />
       </View>
