@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   TextInput,
 } from 'react-native';
@@ -15,6 +14,7 @@ import Slider from '@react-native-community/slider';
 import * as SecureStore from 'expo-secure-store';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { apiService } from '../../services/api';
+import { CustomAlertService } from '../../components/CustomAlert';
 
 const preferenceCategories = [
   { label: 'Praias:',           key: 'beaches',     backendKey: 'Praias' },
@@ -92,7 +92,7 @@ function ProfileView() {
 
     try {
       if (!userData?.email) {
-        Alert.alert('Erro', 'Email do usuário não encontrado.');
+        CustomAlertService.error('Erro', 'Email do usuário não encontrado.');
         return;
       }
 
@@ -122,18 +122,17 @@ function ProfileView() {
       await SecureStore.setItemAsync('userData', JSON.stringify(updatedUserData));
       setUserData(updatedUserData);
 
-      Alert.alert('Sucesso!', 'Perfil atualizado com sucesso!');
+      CustomAlertService.success('Sucesso!', 'Perfil atualizado com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar perfil:', error);
-      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
+      CustomAlertService.error('Erro', 'Não foi possível salvar. Tente novamente.');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Excluir Conta',
+    CustomAlertService.warning('Excluir Conta',
       'Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -153,12 +152,12 @@ function ProfileView() {
               await SecureStore.deleteItemAsync('cachedPlaces');
               await SecureStore.deleteItemAsync('cachedPlacesTime');
 
-              Alert.alert('Conta Excluída', 'Sua conta foi excluída com sucesso.', [
+              CustomAlertService.success('Conta Excluída', 'Sua conta foi excluída com sucesso.', [
                 { text: 'OK', onPress: () => router.replace('/') }
               ]);
             } catch (error) {
               console.error('Erro ao excluir conta:', error);
-              Alert.alert('Erro', 'Não foi possível excluir a conta. Tente novamente.');
+              CustomAlertService.error('Erro', 'Não foi possível excluir a conta. Tente novamente.');
             }
           },
         },
@@ -386,7 +385,7 @@ export default function SettingsScreen() {
     try {
       const userDataRaw = await SecureStore.getItemAsync('userData');
       if (!userDataRaw) {
-        Alert.alert('Erro', 'Usuário não encontrado.');
+        CustomAlertService.error('Erro', 'Usuário não encontrado.');
         return;
       }
 
@@ -423,13 +422,13 @@ export default function SettingsScreen() {
       await SecureStore.deleteItemAsync('cachedPlaces');
       await SecureStore.deleteItemAsync('cachedPlacesTime');
 
-      Alert.alert('Sucesso!', 'Preferências salvas! Os lugares serão atualizados na tela inicial.', [
+      CustomAlertService.success('Sucesso!', 'Preferências salvas! Os lugares serão atualizados na tela inicial.', [
         { text: 'OK' }
       ]);
 
     } catch (error) {
       console.error('Erro ao salvar:', error);
-      Alert.alert('Erro', 'Não foi possível salvar. Tente novamente.');
+      CustomAlertService.error('Erro', 'Não foi possível salvar. Tente novamente.');
     } finally {
       setSaving(false);
     }

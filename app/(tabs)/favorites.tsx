@@ -5,8 +5,7 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  TouchableOpacity,
-  Alert,
+  TouchableOpacity
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -44,8 +43,7 @@ export default function FavoritesScreen() {
   );
 
   const removeFavorite = async (id: string) => {
-    Alert.alert(
-      'Remover dos favoritos?',
+    CustomAlertService.warning('Remover dos favoritos?',
       'Este local será excluído da sua lista.',
       [
         { text: 'Cancelar', style: 'cancel' },
@@ -56,7 +54,7 @@ export default function FavoritesScreen() {
             const updated = favorites.filter((item) => item.id !== id);
             await SecureStore.setItemAsync('MY_FAVORITES_LIST', JSON.stringify(updated));
             setFavorites(updated);
-            Alert.alert('Removido!', 'Local excluído dos favoritos');
+            CustomAlertService.info('Removido!', 'Local excluído dos favoritos');
           },
         },
       ]

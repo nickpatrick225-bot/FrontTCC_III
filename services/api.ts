@@ -1,7 +1,7 @@
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE_URL } from '../config/api';
 import { router } from 'expo-router';
-import { Alert } from 'react-native';
+import { CustomAlertService } from '../components/CustomAlert';
 import type {
   LoginResponse,
   UserData,
@@ -50,7 +50,7 @@ async function request<T>(
   }
 
   if (response.status === 403) {
-    Alert.alert(
+    CustomAlertService.warning(
       'Funcionalidade Premium',
       'Esta funcionalidade requer assinatura premium.'
     );

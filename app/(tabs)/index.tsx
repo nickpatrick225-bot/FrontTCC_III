@@ -7,7 +7,6 @@ import {
   Image,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
   RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -28,6 +27,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as Location from 'expo-location';
 import { GOOGLE_PLACES_API_KEY } from '../../config/api';
 import { apiService } from '../../services/api';
+import { CustomAlertService } from '../../components/CustomAlert';
 import type { Place } from '../../types';
 
 type WeatherDisplay = {
@@ -116,7 +116,7 @@ export default function HomeScreen() {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Localização desativada', 'Usaremos São Paulo como padrão');
+        CustomAlertService.warning('Localização desativada', 'Usaremos São Paulo como padrão');
         setUserLocation({ lat: -23.5505, lng: -46.6333 });
         return;
       }
@@ -299,7 +299,7 @@ export default function HomeScreen() {
       if (initialBatchCount >= allBatches.length) setAllBatchesLoaded(true);
     } catch (e) {
       console.error('Erro ao carregar lotes iniciais:', e);
-      Alert.alert('Erro', 'Não foi possível carregar os lugares.');
+      CustomAlertService.error('Erro', 'Não foi possível carregar os lugares.');
     } finally {
       setInitialLoading(false);
       setRefreshing(false);

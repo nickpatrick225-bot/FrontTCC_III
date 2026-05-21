@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -18,6 +17,7 @@ import { Mail, Lock } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../services/api';
+import { CustomAlertService } from '../components/CustomAlert';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -28,12 +28,12 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim()) {
-      Alert.alert('Atenção', 'Digite seu e-mail para continuar');
+      CustomAlertService.warning('Atenção', 'Digite seu e-mail para continuar');
       return;
     }
 
     if (!password) {
-      Alert.alert('Atenção', 'Digite sua senha para continuar');
+      CustomAlertService.warning('Atenção', 'Digite sua senha para continuar');
       return;
     }
 
@@ -63,13 +63,12 @@ export default function LoginScreen() {
 
       await SecureStore.setItemAsync('userData', JSON.stringify(normalizedUserData));
 
-      // AQUI SALVA AS PREFERÊNCIAS DO USUÁRIO (ESSA É A PARTE QUE FALTAVA!)
       if (normalizedUserData.preferencias) {
         await SecureStore.setItemAsync('USER_PREFERENCES', JSON.stringify(normalizedUserData.preferencias));
       }
 
       // Sucesso!
-      Alert.alert(
+      CustomAlertService.success(
         'Login realizado!',
         `Bem-vindo de volta, ${normalizedUserData.nome.split(' ')[0]}!`,
         [{
@@ -81,11 +80,11 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error('Erro no login:', error);
       if (error.message?.includes('401') || error.message?.includes('Sessão expirada')) {
-        Alert.alert('Erro de login', 'Email ou senha incorretos');
+        CustomAlertService.error('Erro de login', 'Email ou senha incorretos');
       } else if (error.message?.includes('conexão') || error.message?.includes('internet')) {
-        Alert.alert('Sem conexão', 'Verifique sua internet e tente novamente');
+        CustomAlertService.error('Sem conexão', 'Verifique sua internet e tente novamente');
       } else {
-        Alert.alert('Erro de login', 'Email ou senha incorretos');
+        CustomAlertService.error('Erro de login', 'Email ou senha incorretos');
       }
     } finally {
       setLoading(false);

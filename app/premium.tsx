@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
@@ -13,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { ArrowLeft, Star, Check, Zap, Clock, Calendar } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import { apiService } from '../services/api';
+import { CustomAlertService } from '../components/CustomAlert';
 
 export default function PremiumScreen() {
   const router = useRouter();
@@ -42,7 +42,7 @@ export default function PremiumScreen() {
     try {
       const userDataRaw = await SecureStore.getItemAsync('userData');
       if (!userDataRaw) {
-        Alert.alert('Erro', 'Usuário não encontrado. Faça login novamente.');
+        CustomAlertService.error('Erro', 'Usuário não encontrado. Faça login novamente.');
         setProcessing(false);
         return;
       }
@@ -66,14 +66,13 @@ export default function PremiumScreen() {
         // Se não tiver senha salva, o token antigo ainda funciona para a sessão atual
       }
 
-      Alert.alert(
-        'Parabéns! 🎉',
+      CustomAlertService.success('Parabéns! 🎉',
         'Você agora é um usuário Premium! Aproveite os horários ideais e a exportação de calendário.',
         [{ text: 'Vamos lá!', onPress: () => router.back() }]
       );
     } catch (error: any) {
       console.error('Erro ao ativar premium:', error);
-      Alert.alert('Erro', 'Não foi possível ativar o plano premium. Tente novamente.');
+      CustomAlertService.error('Erro', 'Não foi possível ativar o plano premium. Tente novamente.');
     } finally {
       setProcessing(false);
       setProgress(0);

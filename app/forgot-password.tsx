@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Mail, ArrowLeft, Lock, KeyRound } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../services/api';
+import { CustomAlertService } from '../components/CustomAlert';
 
 type Step = 'email' | 'code' | 'newPassword' | 'success';
 
@@ -34,12 +34,12 @@ export default function ForgotPasswordScreen() {
   // Passo 1: enviar código por e-mail real
   const handleSendCode = async () => {
     if (!email.trim()) {
-      Alert.alert('Atenção', 'Digite seu e-mail');
+      CustomAlertService.warning('Atenção', 'Digite seu e-mail');
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
-      Alert.alert('Atenção', 'Digite um e-mail válido');
+      CustomAlertService.warning('Atenção', 'Digite um e-mail válido');
       return;
     }
 
@@ -47,13 +47,13 @@ export default function ForgotPasswordScreen() {
     try {
       await apiService.forgotPassword(email.trim().toLowerCase());
 
-      Alert.alert(
+      CustomAlertService.info(
         'Código enviado!',
         `Se o e-mail estiver cadastrado, você receberá um código de recuperação em ${email}.`,
         [{ text: 'OK', onPress: () => setStep('code') }]
       );
     } catch (error: any) {
-      Alert.alert('Erro', error.message || 'Não foi possível enviar o código. Tente novamente.');
+      CustomAlertService.error('Erro', error.message || 'Não foi possível enviar o código. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -62,7 +62,7 @@ export default function ForgotPasswordScreen() {
   // Passo 2: validar código via API
   const handleValidateCode = async () => {
     if (!code.trim()) {
-      Alert.alert('Atenção', 'Digite o código recebido');
+      CustomAlertService.warning('Atenção', 'Digite o código recebido');
       return;
     }
 
@@ -71,7 +71,7 @@ export default function ForgotPasswordScreen() {
       await apiService.verifyCode(email.trim().toLowerCase(), code.trim());
       setStep('newPassword');
     } catch (error: any) {
-      Alert.alert('Código inválido', error.message || 'O código digitado não confere ou expirou. Tente novamente.');
+      CustomAlertService.info('Código inválido', error.message || 'O código digitado não confere ou expirou. Tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -80,15 +80,15 @@ export default function ForgotPasswordScreen() {
   // Passo 3: redefinir senha via API (com código)
   const handleResetPassword = async () => {
     if (!newPassword || !confirmPassword) {
-      Alert.alert('Atenção', 'Preencha os dois campos de senha');
+      CustomAlertService.warning('Atenção', 'Preencha os dois campos de senha');
       return;
     }
     if (newPassword.length < 6) {
-      Alert.alert('Atenção', 'A senha deve ter pelo menos 6 caracteres');
+      CustomAlertService.warning('Atenção', 'A senha deve ter pelo menos 6 caracteres');
       return;
     }
     if (newPassword !== confirmPassword) {
-      Alert.alert('Atenção', 'As senhas não coincidem');
+      CustomAlertService.warning('Atenção', 'As senhas não coincidem');
       return;
     }
 
@@ -97,7 +97,7 @@ export default function ForgotPasswordScreen() {
       await apiService.resetPassword(email.trim().toLowerCase(), code.trim(), newPassword);
       setStep('success');
     } catch (error: any) {
-      Alert.alert('Erro', error.message || 'Não foi possível redefinir a senha. Tente novamente.');
+      CustomAlertService.error('Erro', error.message || 'Não foi possível redefinir a senha. Tente novamente.');
     } finally {
       setLoading(false);
     }

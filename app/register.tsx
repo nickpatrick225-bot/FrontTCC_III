@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { User, Mail, Lock, Phone, Calendar } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../services/api';
+import { CustomAlertService } from '../components/CustomAlert';
 import { parseDateBR } from '../utils/date';
 
 export default function RegisterScreen() {
@@ -39,24 +39,24 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     // Validações básicas
     if (!formData.nome.trim() || !formData.email.trim() || !formData.senha || !formData.confirmPassword || !formData.numeroCelular.trim() || !formData.dataNascimento) {
-      Alert.alert('Erro', 'Por favor, preencha todos os campos');
+      CustomAlertService.error('Erro', 'Por favor, preencha todos os campos');
       return;
     }
 
     if (formData.senha !== formData.confirmPassword) {
-      Alert.alert('Erro', 'As senhas não coincidem');
+      CustomAlertService.error('Erro', 'As senhas não coincidem');
       return;
     }
 
     if (formData.senha.length < 6) {
-      Alert.alert('Erro', 'A senha deve ter pelo menos 6 caracteres');
+      CustomAlertService.error('Erro', 'A senha deve ter pelo menos 6 caracteres');
       return;
     }
 
     // Validar e converter data DD/MM/YYYY para ISO
     const parsedDate = parseDateBR(formData.dataNascimento);
     if (!parsedDate) {
-      Alert.alert('Erro', 'Data de nascimento inválida. Use o formato DD/MM/AAAA.');
+      CustomAlertService.error('Erro', 'Data de nascimento inválida. Use o formato DD/MM/AAAA.');
       return;
     }
 
@@ -82,18 +82,16 @@ export default function RegisterScreen() {
 
       await apiService.register(payload);
 
-      Alert.alert(
-        'Sucesso!',
+      CustomAlertService.success('Sucesso!',
         'Sua conta foi criada com sucesso!',
-        [{ text: 'OK', onPress: () => router.back() }],
-        { cancelable: false }
+        [{ text: 'OK', onPress: () => router.back() }]
       );
     } catch (error: any) {
       console.error('Erro ao cadastrar:', error);
       if (error.message?.includes('conexão') || error.message?.includes('internet')) {
-        Alert.alert('Erro de conexão', 'Verifique sua internet e tente novamente');
+        CustomAlertService.error('Erro de conexão', 'Verifique sua internet e tente novamente');
       } else {
-        Alert.alert('Erro no cadastro', error.message || 'Tente novamente mais tarde');
+        CustomAlertService.error('Erro no cadastro', error.message || 'Tente novamente mais tarde');
       }
     } finally {
       setLoading(false);

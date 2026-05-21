@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Linking,
   Platform,
-  Alert,
   ActivityIndicator,
   Modal,
   FlatList,
@@ -22,6 +21,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as ExpoCalendar from 'expo-calendar';
 import { FavoritePlace, HorarioIdeal, WeatherData, PlaceDetails } from '../types';
 import { apiService } from '../services/api';
+import { CustomAlertService } from '../components/CustomAlert';
 
 const renderStars = (rating: number) => {
   return Array.from({ length: 5 }, (_, i) => (
@@ -143,15 +143,15 @@ export default function LocationDetailsScreen() {
             savedAt: new Date().toISOString(),
           });
           await SecureStore.setItemAsync('MY_FAVORITES_LIST', JSON.stringify(list));
-          Alert.alert('Salvo!', `${name} adicionado aos favoritos`);
+          CustomAlertService.success('Salvo!', `${name} adicionado aos favoritos`);
         }
       } else {
         list = list.filter(item => item.id !== placeId);
         await SecureStore.setItemAsync('MY_FAVORITES_LIST', JSON.stringify(list));
-        Alert.alert('Removido', `${name} saiu dos favoritos`);
+        CustomAlertService.info('Removido', `${name} saiu dos favoritos`);
       }
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível salvar');
+      CustomAlertService.error('Erro', 'Não foi possível salvar');
     }
   };
 
@@ -171,7 +171,7 @@ export default function LocationDetailsScreen() {
 
   const openMaps = () => {
     if (!userLocation) {
-      Alert.alert('Localização', 'Ative o GPS para traçar a rota!');
+      CustomAlertService.warning('Localização', 'Ative o GPS para traçar a rota!');
       return;
     }
 
@@ -185,7 +185,7 @@ export default function LocationDetailsScreen() {
         if (supported) Linking.openURL(url!);
         else Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
       })
-      .catch(() => Alert.alert('Erro', 'Não foi possível abrir o app de mapas'));
+      .catch(() => CustomAlertService.error('Erro', 'Não foi possível abrir o app de mapas'));
   };
 
   const fetchHorariosIdeais = async () => {
@@ -197,7 +197,7 @@ export default function LocationDetailsScreen() {
       setShowHorarios(true);
     } catch (error: any) {
       if (!error.message?.includes('premium')) {
-        Alert.alert('Erro', 'Não foi possível carregar os horários ideais.');
+        CustomAlertService.error('Erro', 'Não foi possível carregar os horários ideais.');
       }
     } finally {
       setLoadingHorarios(false);
@@ -213,7 +213,7 @@ export default function LocationDetailsScreen() {
       // Pede permissão de calendário
       const { status } = await ExpoCalendar.requestCalendarPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permissão necessária', 'Permita o acesso ao calendário para salvar o horário.');
+        CustomAlertService.warning('Permissão necessária', 'Permita o acesso ao calendário para salvar o horário.');
         return;
       }
 
@@ -224,12 +224,12 @@ export default function LocationDetailsScreen() {
         || calendars[0];
 
       if (!defaultCalendar) {
-        Alert.alert('Erro', 'Nenhum calendário disponível no dispositivo.');
+        CustomAlertService.error('Erro', 'Nenhum calendário disponível no dispositivo.');
         return;
       }
 
       if (isNaN(chosenStart.getTime())) {
-        Alert.alert('Erro', 'Data inválida.');
+        CustomAlertService.error('Erro', 'Data inválida.');
         return;
       }
 
@@ -244,14 +244,13 @@ export default function LocationDetailsScreen() {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
 
-      Alert.alert(
-        'Salvo no calendário! 🗓️',
+      CustomAlertService.success('Salvo no calendário! 🗓️',
         `Visita a ${name} agendada para ${chosenStart.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}.`,
         [{ text: 'Ótimo!' }]
       );
     } catch (error) {
       console.error('Erro ao salvar no calendário:', error);
-      Alert.alert('Erro', 'Não foi possível salvar no calendário.');
+      CustomAlertService.error('Erro', 'Não foi possível salvar no calendário.');
     } finally {
       setSavingCalendar(null);
       setPickerHorario(null);
