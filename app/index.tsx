@@ -10,10 +10,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Image,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { Mail, Lock, User } from 'lucide-react-native';
+import { Mail, Lock } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiService } from '../services/api';
@@ -99,9 +100,12 @@ export default function LoginScreen() {
             {/* Logo */}
             <View style={styles.logoContainer}>
               <View style={styles.logoIcon}>
-                <User size={40} color="#fff" />
+                <Image
+                  source={require('../assets/images/logo.png')}
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
               </View>
-              <Text style={styles.logoText}>FindYourWay</Text>
             </View>
 
             {/* Formulário */}
@@ -182,16 +186,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: 32 },
-  logoContainer: { alignItems: 'center', marginBottom: 60 },
+  logoContainer: { alignItems: 'center', marginBottom: 30 },
   logoIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 360,
+    height: 360,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
   },
+  logoImage: { width: 360, height: 360 },
   logoText: { fontSize: 28, fontWeight: 'bold', color: '#fff', fontStyle: 'italic' },
   formContainer: {
     backgroundColor: 'rgba(255,255,255,0.95)',

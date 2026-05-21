@@ -53,7 +53,30 @@ function ProfileView() {
         setUserData(data);
         setNome(data.nome || '');
         setCelular(data.numeroCelular || data.numerocelular || '');
-        setDataNascimento(data.dataNascimento || data.datanascimento || '');
+        // Formata data de nascimento para DD/MM/AAAA (sem horas)
+        const rawDate = data.dataNascimento || data.datanascimento || '';
+        if (rawDate && rawDate.includes('T')) {
+          // ISO format: "2000-05-15T00:00:00Z" → "15/05/2000"
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            const dd = String(d.getUTCDate()).padStart(2, '0');
+            const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const yyyy = d.getUTCFullYear();
+            setDataNascimento(`${dd}/${mm}/${yyyy}`);
+          } else {
+            setDataNascimento(rawDate);
+          }
+        } else if (rawDate && rawDate.includes('-') && !rawDate.includes('/')) {
+          // Formato "2000-05-15" → "15/05/2000"
+          const parts = rawDate.split('-');
+          if (parts.length === 3) {
+            setDataNascimento(`${parts[2]}/${parts[1]}/${parts[0]}`);
+          } else {
+            setDataNascimento(rawDate);
+          }
+        } else {
+          setDataNascimento(rawDate);
+        }
         setOrcamento(String(data.orcamento || 0));
       }
     } catch (error) {
@@ -490,9 +513,13 @@ export default function SettingsScreen() {
             </Text>
           </View>
 
-          <TouchableOpacity style={styles.headerButton} onPress={toggleView}>
-            <ArrowRight size={24} color="#fff" />
-          </TouchableOpacity>
+          {currentView === 'preferences' ? (
+            <TouchableOpacity style={styles.headerButton} onPress={toggleView}>
+              <ArrowRight size={24} color="#fff" />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerButton} />
+          )}
         </View>
       </LinearGradient>
 
@@ -526,7 +553,7 @@ const styles = StyleSheet.create({
   headerCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#fff' },
   backButton: { padding: 8 },
-  headerButton: { padding: 8 },
+  headerButton: { width: 40, padding: 8, alignItems: 'flex-end' },
   content: { flex: 1, padding: 20 },
   preferenceItem: {
     backgroundColor: '#fff',

@@ -39,13 +39,46 @@ export type LoginResponse = {
 };
 
 export type WeatherData = {
-  temperature: number;
-  isRaining: boolean;
-  description: string;
+  // Formato da Google Weather API
+  temperature?: {
+    degrees: number;
+    unit: string;
+  };
+  feelsLikeTemperature?: {
+    degrees: number;
+    unit: string;
+  };
+  weatherCondition?: {
+    description?: {
+      text: string;
+    };
+    type?: string;
+  };
+  // Campos legados (caso a API retorne formato customizado)
+  temperatura?: number;
+  descricao?: string;
+  isRaining?: boolean;
 };
 
 export type HorarioIdeal = {
   horario: string;
   condicaoClimatica: string;
   recomendado: boolean;
+};
+
+export type PlaceReview = {
+  authorName: string;
+  authorPhotoUri?: string;
+  rating: number;
+  relativeTime?: string;
+  text: string;
+  language?: string;
+  publishTime?: string;
+};
+
+export type PlaceDetails = {
+  id: string;
+  rating?: number;
+  userRatingCount?: number;
+  reviews: PlaceReview[];
 };

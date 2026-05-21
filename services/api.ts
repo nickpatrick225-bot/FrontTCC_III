@@ -8,6 +8,7 @@ import type {
   Place,
   WeatherData,
   HorarioIdeal,
+  PlaceDetails,
 } from '../types';
 
 async function getToken(): Promise<string | null> {
@@ -136,6 +137,9 @@ export const apiService = {
   getHorariosIdeais: (placeId: string) =>
     request<HorarioIdeal[]>(`/api/Places/${placeId}/horarios-ideais`),
 
+  getPlaceDetails: (placeId: string) =>
+    request<PlaceDetails>(`/api/Places/${encodeURIComponent(placeId)}/details`),
+
   exportCalendar: (payload: Record<string, unknown>) =>
     request<Blob>('/api/Places/exportar-calendario', {
       method: 'POST',
@@ -162,9 +166,21 @@ export const apiService = {
     }
   },
 
-  resetPassword: (email: string, novaSenha: string) =>
-    request<void>('/api/Usuarios/reset-password', {
+  resetPassword: (email: string, code: string, novaSenha: string) =>
+    request<{ message: string }>('/api/Usuarios/reset-password', {
       method: 'POST',
-      body: JSON.stringify({ email, novaSenha }),
+      body: JSON.stringify({ email, code, novaSenha }),
+    }, false),
+
+  forgotPassword: (email: string) =>
+    request<{ message: string }>('/api/Usuarios/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }, false),
+
+  verifyCode: (email: string, code: string) =>
+    request<{ valid: boolean; message: string }>('/api/Usuarios/verify-code', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
     }, false),
 };

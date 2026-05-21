@@ -28,11 +28,10 @@ export default function ForgotPasswordScreen() {
 
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
-  const [generatedCode, setGeneratedCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Passo 1: enviar código (simulado)
+  // Passo 1: enviar código por e-mail real
   const handleSendCode = async () => {
     if (!email.trim()) {
       Alert.alert('Atenção', 'Digite seu e-mail');
@@ -46,41 +45,39 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      // Verifica se o usuário existe
-      await apiService.getUser(email.trim().toLowerCase());
+      await apiService.forgotPassword(email.trim().toLowerCase());
 
-      // Gera código de 6 dígitos simulado
-      const mockCode = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedCode(mockCode);
-
-      // Em produção, aqui seria enviado um e-mail real
-      // Por ora, exibe o código em um alert (simulação)
       Alert.alert(
         'Código enviado!',
-        `Um código de recuperação foi enviado para ${email}.\n\n[SIMULAÇÃO] Seu código é: ${mockCode}`,
+        `Se o e-mail estiver cadastrado, você receberá um código de recuperação em ${email}.`,
         [{ text: 'OK', onPress: () => setStep('code') }]
       );
-    } catch {
-      Alert.alert('Erro', 'E-mail não encontrado. Verifique e tente novamente.');
+    } catch (error: any) {
+      Alert.alert('Erro', error.message || 'Não foi possível enviar o código. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Passo 2: validar código
-  const handleValidateCode = () => {
+  // Passo 2: validar código via API
+  const handleValidateCode = async () => {
     if (!code.trim()) {
       Alert.alert('Atenção', 'Digite o código recebido');
       return;
     }
-    if (code.trim() !== generatedCode) {
-      Alert.alert('Código inválido', 'O código digitado não confere. Tente novamente.');
-      return;
+
+    setLoading(true);
+    try {
+      await apiService.verifyCode(email.trim().toLowerCase(), code.trim());
+      setStep('newPassword');
+    } catch (error: any) {
+      Alert.alert('Código inválido', error.message || 'O código digitado não confere ou expirou. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
-    setStep('newPassword');
   };
 
-  // Passo 3: redefinir senha
+  // Passo 3: redefinir senha via API (com código)
   const handleResetPassword = async () => {
     if (!newPassword || !confirmPassword) {
       Alert.alert('Atenção', 'Preencha os dois campos de senha');
@@ -97,7 +94,7 @@ export default function ForgotPasswordScreen() {
 
     setLoading(true);
     try {
-      await apiService.resetPassword(email.trim().toLowerCase(), newPassword);
+      await apiService.resetPassword(email.trim().toLowerCase(), code.trim(), newPassword);
       setStep('success');
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Não foi possível redefinir a senha. Tente novamente.');

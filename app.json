@@ -33,7 +33,11 @@
       }
     },
     "android": {
-      "package": "com.nikkpatrikk.boltexponativewind"
+      "package": "com.nikkpatrikk.boltexponativewind",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#40E0D0"
+      }
     },
     "owner": "nikkpatrikk"
   }
