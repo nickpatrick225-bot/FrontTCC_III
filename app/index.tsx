@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,43 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // Verifica se já tem sessão ativa ao abrir o app
+  useEffect(() => {
+    (async () => {
+      try {
+        const token = await SecureStore.getItemAsync('authToken');
+        const userData = await SecureStore.getItemAsync('userData');
+
+        if (token && userData) {
+          // Tem sessão salva — vai direto pra Home
+          router.replace('/(tabs)');
+          return;
+        }
+      } catch (error) {
+        console.log('Erro ao verificar sessão:', error);
+      } finally {
+        setCheckingSession(false);
+      }
+    })();
+  }, []);
+
+  // Mostra loading enquanto verifica sessão
+  if (checkingSession) {
+    return (
+      <LinearGradient colors={['#40E0D0', '#1E90FF']} style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Image
+            source={require('../assets/images/logo.png')}
+            style={{ width: 200, height: 200 }}
+            resizeMode="contain"
+          />
+          <ActivityIndicator size="large" color="#fff" style={{ marginTop: 20 }} />
+        </View>
+      </LinearGradient>
+    );
+  }
 
   const handleLogin = async () => {
     if (!email.trim()) {
